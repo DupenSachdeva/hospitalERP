@@ -12,3 +12,133 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model hospitalFoodManager{
+
+  id Int  @id @default(autoincrement())
+  name String
+  email String
+  password String
+  contact String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+   
+  patients patient[]
+
+  mealsAssigned meal[]
+
+  pantryStaff pantryStaff[]
+
+
+
+  
+}
+enum Gender{
+  MALE
+  FEMALE
+  OTHER
+}
+
+model patient {
+  id                Int                  @id @default(autoincrement())
+  name              String               // Patient name
+  age               Int                  // Patient age
+  gender            Gender               // Gender enum
+  contact           String               // Contact information
+  emergencyContact  String               // Emergency contact number
+  roomNumber        String               // Room number
+  bedNumber         String               // Bed number
+  floorNumber       Int                  // Floor number
+  diseases          String?              // Comma-separated diseases
+  allergies         String?              // Comma-separated allergies
+  foodManager       hospitalFoodManager  @relation(fields: [foodManagerId],references: [id])
+  foodManagerId     Int
+  deficiencies      patientDeficiency[]  // Relation to deficiencies
+  dailyDietCharts   dailyDietChart[]     // Relation to daily diet charts
+
+  meals             meal[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+}
+
+model dailyDietChart {
+  id         Int      @id @default(autoincrement())
+  patient    patient   @relation(fields: [patientId], references: [id])
+  patientId  Int       
+  date       DateTime  
+  meals      meal[]   
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model deficiency {
+  id          Int                   @id @default(autoincrement())
+  name        String                @unique
+  description String?
+  patients    patientDeficiency[]
+}
+
+model patientDeficiency {
+  id           Int         @id @default(autoincrement())
+  deficiency   deficiency   @relation(fields: [deficiencyId], references: [id])
+  deficiencyId Int
+  patient      patient      @relation(fields: [patientId], references: [id])
+  patientId    Int
+  level        Float
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model pantryStaff {
+  id                 Int              @id @default(autoincrement())
+  name               String          
+  contact            String          
+  location           String          
+  assignedMeals      meal[]          
+  manager            hospitalFoodManager @relation(fields: [managerId],references: [id])
+  managerId          Int
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model meal {
+  id                 Int              @id @default(autoincrement())
+  patient            patient          @relation(fields: [patientId], references: [id])
+  patientId          Int              
+  date               DateTime         
+  timeSlot           timeSlot        
+  description        String?              
+
+  deliveredTime      DateTime
+
+  status             mealStatus       @default(PENDING) 
+  failureReason      String?
+  lateReason         String?
+
+  assignedStaff      pantryStaff?     @relation(fields: [pantryStaffId], references: [id])
+  pantryStaffId      Int?             
+
+  assignedBy         hospitalFoodManager @relation(fields: [managerId], references: [id])
+  managerId          Int              
+  
+  dailyDietChart     dailyDietChart   @relation(fields: [dailyDietChartId],references: [id])
+  dailyDietChartId   Int
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+enum timeSlot {
+  MORNING
+  AFTERNOON
+  EVENING
+  NIGHT
+}
+
+enum mealStatus {
+  PENDING       
+  IN_PROGRESS   
+  COMPLETED     
+  DELIVERED     
+  FAILED
+  LATE
+}
